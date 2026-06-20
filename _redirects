@@ -2,4 +2,5 @@
 /login /index.html 200
 /register /register.html 200
 /dashboard /dashboard.html 200
+/dashboard.html /dashboard.html 200
 /* /index.html 200
