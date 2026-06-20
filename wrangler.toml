@@ -1,0 +1,8 @@
+name = "aegis-godmode-api"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "aegis-godmode-db"
+database_id = "020e1668-088e-475c-9ec2-b86c495f07b6"
