@@ -3,46 +3,95 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="AEGIS Godmode v2.20 - Automated Trading System Dashboard">
-<title>AEGIS Godmode v2.20 — Login</title>
-<link rel="stylesheet" href="assets/css/style.css">
+<title>AEGIS GODMODE Dashboard</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --card: #161b22;
+  --border: #30363d;
+  --text: #c9d1d9;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --green: #3fb950;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+.container { max-width: 800px; width: 100%; }
+header { text-align: center; margin-bottom: 40px; }
+header h1 { font-size: 2.5rem; color: var(--accent); margin-bottom: 8px; }
+header p { color: var(--muted); font-size: 1.1rem; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform 0.2s, border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+}
+.card h2 { font-size: 1.5rem; color: var(--accent); margin-bottom: 12px; }
+.card .badge {
+  display: inline-block;
+  background: rgba(88,166,255,0.15);
+  color: var(--accent);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+  align-self: flex-start;
+}
+.card .badge.legacy { background: rgba(139,148,158,0.15); color: var(--muted); }
+.card p { color: var(--muted); font-size: 0.95rem; }
+.card .arrow { margin-top: auto; padding-top: 20px; color: var(--accent); font-weight: 600; }
+footer { text-align: center; margin-top: 40px; color: var(--muted); font-size: 0.85rem; }
+</style>
 </head>
-<body class="auth-page">
-<div class="auth-container">
-  <div class="auth-logo">
-    <svg class="logo-svg" viewBox="0 0 64 64" aria-hidden="true">
-      <defs><linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0ea5e9"/><stop offset="100%" style="stop-color:#10b981"/></linearGradient></defs>
-      <path d="M32 2L4 14v18c0 18 12 34 28 38 16-4 28-20 28-38V14L32 2z" fill="url(#lg)" opacity="0.2"/>
-      <path d="M32 8L10 17v15c0 15 9.5 28.5 22 32 12.5-3.5 22-17 22-32V17L32 8z" fill="none" stroke="url(#lg)" stroke-width="2"/>
-      <circle cx="32" cy="30" r="8" fill="url(#lg)"/>
-      <path d="M32 18v-6M32 48v-6M20 30h-6M44 30h6" stroke="url(#lg)" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-    <h1>AEGIS<span class="highlight">Godmode</span></h1>
-    <p class="version">v2.20</p>
+<body>
+<div class="container">
+  <header>
+    <h1>AEGIS GODMODE</h1>
+    <p>Select your dashboard</p>
+  </header>
+  
+  <div class="card-grid">
+    <a href="dashboard.html" class="card">
+      <span class="badge legacy">Legacy</span>
+      <h2>Asset-Class Dashboard</h2>
+      <p>Multi-asset class overview with equity curve, P&L, and position tracking. Displays aggregated data across asset classes (FX, crypto, equities, commodities).</p>
+      <div class="arrow">Open Dashboard &rarr;</div>
+    </a>
+    
+    <a href="dashboard_v2.html" class="card">
+      <span class="badge">v2.20 Extended</span>
+      <h2>Extended Terminal Dashboard</h2>
+      <p>Multi-terminal trading interface with real-time position management, equity charting, log viewer, alert configuration, economic calendar, and terminal settings.</p>
+      <div class="arrow">Open Dashboard &rarr;</div>
+    </a>
   </div>
-  <form id="loginForm" class="auth-form" autocomplete="on">
-    <div class="form-group">
-      <label for="username">Username</label>
-      <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter username">
-    </div>
-    <div class="form-group">
-      <label for="password">Password</label>
-      <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter password">
-    </div>
-    <div class="form-group">
-      <label class="checkbox-label">
-        <input type="checkbox" id="demoMode" checked>
-        <span>Demo Mode (no backend required)</span>
-      </label>
-    </div>
-    <button type="submit" class="btn btn-primary">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17v-2H5.5A2.5 2.5 0 0 1 3 12.5v-1A2.5 2.5 0 0 1 5.5 9H10V7l6 5-6 5zM19 4h-6v2h6v12h-6v2h6a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>
-      Login
-    </button>
-    <div id="loginError" class="error-message"></div>
-  </form>
-  <p class="auth-footer">Don't have an account? <a href="register.html">Register</a></p>
+  
+  <footer>
+    AEGIS GODMODE Trading System &middot; Powered by StaxPilot
+  </footer>
 </div>
-<script src="assets/js/auth.js"></script>
 </body>
 </html>

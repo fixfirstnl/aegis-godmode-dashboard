@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AEGIS GODMODE v2.20 - Extended Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0d1117;
+  --card: #161b22;
+  --border: #30363d;
+  --text: #c9d1d9;
+  --muted: #8b949e;
+  --green: #3fb950;
+  --red: #f85149;
+  --yellow: #d29922;
+  --cyan: #39c5cf;
+  --accent: #58a6ff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+}
+.container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+}
+header h1 { font-size: 1.5rem; color: var(--accent); }
+header .sub { font-size: 0.8rem; color: var(--muted); }
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 4px; margin-bottom: 20px;
+  border-bottom: 1px solid var(--border); padding-bottom: 0;
+  flex-wrap: wrap;
+}
+.tab-btn {
+  background: transparent; color: var(--muted); border: none;
+  padding: 10px 20px; cursor: pointer; font-size: 0.9rem;
+  border-bottom: 2px solid transparent; border-radius: 0;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.status-bar {
+  display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.status-pill {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 16px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;
+}
+.status-pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot.ok { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.dot.warn { background: var(--yellow); }
+.dot.err { background: var(--red); }
+
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px; margin-bottom: 20px;
+}
+.card h2 { font-size: 1.1rem; margin-bottom: 16px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+.card h3 { font-size: 1rem; margin-bottom: 12px; color: var(--text); }
+
+.grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px; }
+.metric {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 16px; text-align: center;
+}
+.metric .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.metric .value { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.metric .value.green { color: var(--green); }
+.metric .value.red { color: var(--red); }
+.metric .value.yellow { color: var(--yellow); }
+.metric .value.cyan { color: var(--cyan); }
+
+select, button, input {
+  background: var(--bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 16px; font-size: 0.9rem; cursor: pointer;
+}
+button { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+button:hover { opacity: 0.9; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.secondary { background: var(--card); border-color: var(--border); color: var(--text); }
+button.danger { background: var(--red); border-color: var(--red); }
+
+select { min-width: 300px; margin-right: 8px; }
+input { width: 100%; cursor: text; }
+input[type="checkbox"] { width: auto; cursor: pointer; }
+
+.refresh-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.last-update { font-size: 0.8rem; color: var(--muted); margin-left: auto; }
+
+.positions-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.positions-table th, .positions-table td {
+  padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border);
+}
+.positions-table th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+.positions-table tr:hover { background: rgba(88,166,255,0.05); }
+.positions-table .pnl { font-weight: 600; font-variant-numeric: tabular-nums; }
+.positions-table .pnl.pos { color: var(--green); }
+.positions-table .pnl.neg { color: var(--red); }
+
+.no-pos { color: var(--muted); font-style: italic; padding: 20px 0; text-align: center; }
+
+.loader {
+  display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error-msg { background: rgba(248,81,73,0.1); border: 1px solid var(--red); color: var(--red); padding: 12px; border-radius: 8px; }
+.success-msg { background: rgba(63,185,80,0.1); border: 1px solid var(--green); color: var(--green); padding: 12px; border-radius: 8px; }
+
+/* Terminal cards */
+.terminal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.terminal-card {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px; cursor: pointer; transition: border-color 0.2s;
+}
+.terminal-card:hover { border-color: var(--accent); }
+.terminal-card .t-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.terminal-card .t-name { font-weight: 600; font-size: 1rem; }
+.terminal-card .t-status { font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; }
+.terminal-card .t-status.connected { background: rgba(63,185,80,0.2); color: var(--green); }
+.terminal-card .t-status.disconnected { background: rgba(248,81,73,0.2); color: var(--red); }
+.terminal-card .t-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.terminal-card .t-metric { text-align: center; }
+.terminal-card .t-metric .label { font-size: 0.7rem; color: var(--muted); }
+.terminal-card .t-metric .value { font-size: 1.1rem; font-weight: 600; }
+
+/* Chart container */
+.chart-container { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; height: 400px; position: relative; }
+
+/* Logs */
+.log-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; font-family: monospace; }
+.log-table th, .log-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.log-table th { color: var(--muted); font-weight: 600; font-size: 0.75rem; }
+.log-table tr:hover { background: rgba(88,166,255,0.05); }
+.log-level { padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+.log-level.INFO { background: rgba(88,166,255,0.2); color: var(--accent); }
+.log-level.WARNING { background: rgba(210,153,34,0.2); color: var(--yellow); }
+.log-level.ERROR { background: rgba(248,81,73,0.2); color: var(--red); }
+
+/* Alerts */
+.alert-config-row { display: flex; align-items: center; gap: 16px; padding: 12px; border-bottom: 1px solid var(--border); }
+.alert-config-row .label { flex: 1; }
+.alert-config-row input[type="number"] { width: 100px; }
+
+/* Config form */
+.config-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.config-row label { min-width: 200px; font-size: 0.9rem; }
+.config-row input { flex: 1; }
+
+/* Flash notification */
+.flash-notify {
+  position: fixed; top: 20px; right: 20px;
+  background: var(--card); border: 1px solid var(--accent); border-radius: 12px;
+  padding: 16px 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  z-index: 1000; animation: slideIn 0.3s ease;
+}
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+@media (max-width: 600px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2 { grid-template-columns: 1fr; }
+  select { min-width: 0; width: 100%; }
+  .terminal-grid { grid-template-columns: 1fr; }
+  .tabs { overflow-x: auto; flex-wrap: nowrap; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div>
+    <h1>AEGIS GODMODE v2.20</h1>
+    <div class="sub">Extended Trading Dashboard</div>
+  </div>
+  <div class="sub" id="connStatus">Initialiseren...</div>
+</header>
+
+<div class="status-bar">
+  <div class="status-pill"><span class="dot ok" id="statusDot"></span> <span id="statusText">Laden...</span></div>
+  <div class="status-pill">Terminals: <strong id="termCount">-</strong></div>
+  <div class="status-pill">Geselecteerd: <strong id="selTerm">-</strong></div>
+  <div class="status-pill">Total Balance: <strong id="totalBalance">-</strong></div>
+  <div class="status-pill">Total Equity: <strong id="totalEquity">-</strong></div>
+  <div class="status-pill">Total P&L: <strong id="totalProfit">-</strong></div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" data-tab="overview">Overzicht</button>
+  <button class="tab-btn" data-tab="terminals">Multi-Terminal</button>
+  <button class="tab-btn" data-tab="chart">P&L Chart</button>
+  <button class="tab-btn" data-tab="positions">Posities</button>
+  <button class="tab-btn" data-tab="logs">Logs</button>
+  <button class="tab-btn" data-tab="alerts">Alerts</button>
+  <button class="tab-btn" data-tab="calendar">Kalender</button>
+  <button class="tab-btn" data-tab="settings">Instellingen</button>
+</div>
+
+<!-- Tab: Overview -->
+<div class="tab-content active" id="tab-overview">
+  <div class="card">
+    <h2>Terminal Kiezen</h2>
+    <div class="refresh-row">
+      <select id="terminalSelect"><option value="">-- Kies een actieve terminal --</option></select>
+      <button onclick="connectTerminal()" id="connectBtn">Verbinden</button>
+      <button onclick="disconnectTerminal()" class="secondary" id="disconnectBtn" style="display:none;">Verbreken</button>
+      <span class="last-update" id="lastUpdate">Nog niet geupdate</span>
+    </div>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <div class="card">
+      <h2>Account Overzicht</h2>
+      <div class="grid-4">
+        <div class="metric">
+          <div class="label">Balance</div>
+          <div class="value cyan" id="mBalance">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">Equity</div>
+          <div class="value green" id="mEquity">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">Margin</div>
+          <div class="value yellow" id="mMargin">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">Profit</div>
+          <div class="value" id="mProfit">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">Free Margin</div>
+          <div class="value cyan" id="mFree">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">Login</div>
+          <div class="value" id="mLogin">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">Server</div>
+          <div class="value" id="mServer">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">Currency</div>
+          <div class="value" id="mCurrency">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Open Posities (<span id="posCount">0</span>)</h2>
+      <div id="positionsArea">
+        <div class="no-pos">Geen open posities</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Multi-Terminal -->
+<div class="tab-content" id="tab-terminals">
+  <div class="card">
+    <h2>Multi-Terminal Overview</h2>
+    <div class="refresh-row">
+      <span id="multiSummary">Laden...</span>
+      <span class="last-update" id="multiLastUpdate">-</span>
+    </div>
+    <div class="terminal-grid" id="terminalCards">
+      <div class="no-pos">Geen terminals gevonden</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: P&L Chart -->
+<div class="tab-content" id="tab-chart">
+  <div class="card">
+    <h2>Equity Curve</h2>
+    <div class="refresh-row">
+      <select id="chartTerminal">
+        <option value="">-- Selecteer terminal --</option>
+      </select>
+      <select id="chartHours">
+        <option value="1">Laatste 1 uur</option>
+        <option value="6">Laatste 6 uur</option>
+        <option value="24" selected>Laatste 24 uur</option>
+        <option value="72">Laatste 3 dagen</option>
+        <option value="168">Laatste 7 dagen</option>
+      </select>
+      <button onclick="loadChart()">Laden</button>
+    </div>
+    <div class="chart-container">
+      <canvas id="equityChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Positions -->
+<div class="tab-content" id="tab-positions">
+  <div class="card">
+    <h2>Position Management</h2>
+    <div class="refresh-row">
+      <button onclick="closeAllPositions()" class="danger" id="closeAllBtn">Close All Positions</button>
+      <span class="last-update" id="posLastUpdate">-</span>
+    </div>
+    <div id="posManageArea">
+      <div class="no-pos">Verbind eerst met een terminal</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Logs -->
+<div class="tab-content" id="tab-logs">
+  <div class="card">
+    <h2>Log Viewer</h2>
+    <div class="refresh-row">
+      <select id="logLevel">
+        <option value="ALL">Alle levels</option>
+        <option value="INFO">INFO</option>
+        <option value="WARNING">WARNING</option>
+        <option value="ERROR">ERROR</option>
+      </select>
+      <select id="logLimit">
+        <option value="50">50 entries</option>
+        <option value="100" selected>100 entries</option>
+        <option value="200">200 entries</option>
+      </select>
+      <button onclick="loadLogs()">Laden</button>
+      <button onclick="downloadLogs()" class="secondary">Download CSV</button>
+      <span class="last-update" id="logLastUpdate">-</span>
+    </div>
+    <div id="logsArea">
+      <div class="no-pos">Klik "Laden" om logs te bekijken</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Alerts -->
+<div class="tab-content" id="tab-alerts">
+  <div class="grid-2">
+    <div class="card">
+      <h2>Alert Configuratie</h2>
+      <div id="alertConfigArea">
+        <div class="no-pos">Laden...</div>
+      </div>
+      <button onclick="saveAlertConfig()" style="margin-top: 16px;">Configuratie Opslaan</button>
+    </div>
+    <div class="card">
+      <h2>Alert Historie</h2>
+      <div id="alertHistoryArea">
+        <div class="no-pos">Geen alerts</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Calendar -->
+<div class="tab-content" id="tab-calendar">
+  <div class="card">
+    <h2>Economische Kalender</h2>
+    <div id="calendarArea">
+      <div class="no-pos">Laden...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Settings -->
+<div class="tab-content" id="tab-settings">
+  <div class="card">
+    <h2>Instellingen</h2>
+    <div id="configArea">
+      <div class="no-pos">Laden...</div>
+    </div>
+    <button onclick="saveConfig()" style="margin-top: 16px;">Instellingen Opslaan</button>
+  </div>
+</div>
+
+<div id="errorArea"></div>
+<div id="flashArea"></div>
+
+</div>
+
+<script>
+const API = 'https://api-v2.staxpilot.com';
+let currentTerminal = null;
+let refreshInterval = null;
+let autoRefresh = true;
+let equityChart = null;
+
+// ==================== TABS ====================
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    
+    // Trigger tab-specific loading
+    if (btn.dataset.tab === 'terminals') loadMultiTerminal();
+    if (btn.dataset.tab === 'chart') loadChartTerminals();
+    if (btn.dataset.tab === 'logs') loadLogs();
+    if (btn.dataset.tab === 'alerts') loadAlerts();
+    if (btn.dataset.tab === 'calendar') loadCalendar();
+    if (btn.dataset.tab === 'settings') loadConfig();
+  });
+});
+
+// ==================== TERMINALS ====================
+
+async function loadTerminals() {
+  try {
+    const res = await fetch(API + '/api/terminals', {mode: 'cors', credentials: 'omit'});
+    const data = await res.json();
+    const sel = document.getElementById('terminalSelect');
+    sel.innerHTML = '<option value="">-- Kies een actieve terminal --</option>';
+    data.terminals.forEach((t, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.text = t.name + ' [ACTIEF - PID ' + t.pid + ']';
+      sel.appendChild(opt);
+    });
+    document.getElementById('termCount').textContent = data.terminals.length;
+    updateStatus(data.terminals.length > 0 ? 'ok' : 'warn', data.terminals.length + ' terminal(s) actief');
+  } catch (e) {
+    updateStatus('err', 'Kan terminals niet laden');
+  }
+}
+
+async function connectTerminal() {
+  const sel = document.getElementById('terminalSelect');
+  const idx = sel.value;
+  if (idx === '') { alert('Kies eerst een terminal'); return; }
+  
+  const btn = document.getElementById('connectBtn');
+  btn.disabled = true;
+  btn.textContent = 'Verbinden...';
+  
+  try {
+    const res = await fetch(API + '/api/connect', {mode: 'cors', credentials: 'omit', 
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({index: parseInt(idx)})
+    });
+    const data = await res.json();
+    if (data.ok) {
+      currentTerminal = data.terminal;
+      document.getElementById('selTerm').textContent = currentTerminal.name;
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('connectBtn').style.display = 'none';
+      document.getElementById('disconnectBtn').style.display = 'inline-block';
+      document.getElementById('errorArea').innerHTML = '';
+      startAutoRefresh();
+      showFlash('Verbonden met ' + currentTerminal.name, 'success');
+    } else {
+      showError(data.error || 'Connectie mislukt');
+    }
+  } catch (e) {
+    showError('Verbindingsfout: ' + e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = 'Verbinden';
+}
+
+function disconnectTerminal() {
+  currentTerminal = null;
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('connectBtn').style.display = 'inline-block';
+  document.getElementById('disconnectBtn').style.display = 'none';
+  document.getElementById('selTerm').textContent = '-';
+  if (refreshInterval) clearInterval(refreshInterval);
+  showFlash('Verbinding verbroken', 'info');
+}
+
+// ==================== REFRESH ====================
+
+async function refreshData() {
+  if (!currentTerminal) return;
+  try {
+    const res = await fetch(API + '/api/data', {mode: 'cors', credentials: 'omit'});
+    const data = await res.json();
+    if (data.ok) {
+      updateDashboard(data);
+      document.getElementById('errorArea').innerHTML = '';
+    } else {
+      showError(data.error || 'Data ophalen mislukt');
+    }
+  } catch (e) {
+    showError('Refresh mislukt: ' + e.message);
+  }
+}
+
+function updateDashboard(data) {
+  const a = data.account || {};
+  const curr = a.currency || 'USD';
+  const fmt = v => v === null || v === undefined ? '-' : v.toLocaleString('nl-NL', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ' + curr;
+  
+  document.getElementById('mBalance').textContent = fmt(a.balance);
+  document.getElementById('mEquity').textContent = fmt(a.equity);
+  document.getElementById('mMargin').textContent = fmt(a.margin);
+  document.getElementById('mFree').textContent = fmt(a.free_margin);
+  document.getElementById('mProfit').textContent = fmt(a.profit);
+  
+  const profitEl = document.getElementById('mProfit');
+  if (a.profit >= 0) { profitEl.className = 'value green'; } else { profitEl.className = 'value red'; }
+  
+  document.getElementById('mLogin').textContent = a.login || '-';
+  document.getElementById('mServer').textContent = a.server || '-';
+  document.getElementById('mCurrency').textContent = a.currency || '-';
+  
+  const pos = data.positions || [];
+  document.getElementById('posCount').textContent = pos.length;
+  
+  const area = document.getElementById('positionsArea');
+  if (pos.length === 0) {
+    area.innerHTML = '<div class="no-pos">Geen open posities</div>';
+  } else {
+    let html = '<table class="positions-table"><thead><tr>';
+    html += '<th>Ticket</th><th>Symbool</th><th>Type</th><th>Lots</th><th>Open</th><th>Huidig</th><th>P&L</th><th>Swap</th>';
+    html += '</tr></thead><tbody>';
+    pos.forEach(p => {
+      const pnlClass = p.profit >= 0 ? 'pos' : 'neg';
+      html += '<tr><td>' + p.ticket + '</td><td>' + p.symbol + '</td><td>' + p.type + '</td><td>' + p.volume.toFixed(2) + '</td><td>' + p.open_price.toFixed(5) + '</td><td>' + p.current_price.toFixed(5) + '</td><td class="pnl ' + pnlClass + '">' + p.profit.toFixed(2) + ' ' + curr + '</td><td>' + p.swap.toFixed(2) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    area.innerHTML = html;
+  }
+  
+  // Update position management tab
+  updatePosManage(pos, curr);
+  
+  document.getElementById('lastUpdate').textContent = 'Laatste update: ' + new Date().toLocaleTimeString('nl-NL');
+}
+
+function startAutoRefresh() {
+  if (refreshInterval) clearInterval(refreshInterval);
+  refreshData();
+  refreshInterval = setInterval(refreshData, 5000);
+}
+
+function updateStatus(type, text) {
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  dot.className = 'dot ' + type;
+  txt.textContent = text;
+}
+
+function showError(msg) {
+  document.getElementById('errorArea').innerHTML = '<div class="error-msg">' + msg + '</div>';
+}
+
+function showFlash(msg, type) {
+  const area = document.getElementById('flashArea');
+  const color = type === 'success' ? 'var(--green)' : (type === 'error' ? 'var(--red)' : 'var(--accent)');
+  area.innerHTML = '<div class="flash-notify" style="border-color:' + color + '">' + msg + '</div>';
+  setTimeout(() => area.innerHTML = '', 3000);
+}
+
+// ==================== MULTI-TERMINAL ====================
+
+async function loadMultiTerminal() {
+  try {
+    const res = await fetch(API + '/api/terminals/overview', {mode: 'cors', credentials: 'omit'});
+    const data = await res.json();
+    
+    if (data.ok) {
+      const summary = data.summary;
+      const profitClass = summary.total_profit >= 0 ? 'green' : 'red';
+      document.getElementById('multiSummary').innerHTML = 
+        'Terminals: <strong>' + summary.count + '</strong> | ' +
+        'Total Balance: <strong>' + (summary.total_balance?.toFixed(2) || '0') + '</strong> | ' +
+        'Total Equity: <strong>' + (summary.total_equity?.toFixed(2) || '0') + '</strong> | ' +
+        'Total P&L: <strong class="' + profitClass + '">' + (summary.total_profit?.toFixed(2) || '0') + '</strong> | ' +
+        'Total Positions: <strong>' + (summary.total_positions || 0) + '</strong>';
+      
+      document.getElementById('totalBalance').textContent = (summary.total_balance?.toFixed(2) || '0');
+      document.getElementById('totalEquity').textContent = (summary.total_equity?.toFixed(2) || '0');
+      document.getElementById('totalProfit').textContent = (summary.total_profit?.toFixed(2) || '0');
+      
+      const cards = document.getElementById('terminalCards');
+      if (data.terminals.length === 0) {
+        cards.innerHTML = '<div class="no-pos">Geen terminals gevonden</div>';
+      } else {
+        cards.innerHTML = data.terminals.map(t => {
+          const profitClass = (t.profit || 0) >= 0 ? 'green' : 'red';
+          const connClass = t.connected ? 'connected' : 'disconnected';
+          const connText = t.connected ? 'CONNECTED' : 'OFFLINE';
+          const lastSeen = t.last_seen ? new Date(t.last_seen * 1000).toLocaleTimeString('nl-NL') : '-';
+          return `
+            <div class="terminal-card" onclick="selectTerminalFromCard('${t.name}')">
+              <div class="t-header">
+                <span class="t-name">${t.name}</span>
+                <span class="t-status ${connClass}">${connText}</span>
+              </div>
+              <div class="t-metrics">
+                <div class="t-metric"><div class="label">Balance</div><div class="value">${(t.balance || 0).toFixed(2)}</div></div>
+                <div class="t-metric"><div class="label">Equity</div><div class="value">${(t.equity || 0).toFixed(2)}</div></div>
+                <div class="t-metric"><div class="label">P&L</div><div class="value ${profitClass}">${(t.profit || 0).toFixed(2)}</div></div>
+                <div class="t-metric"><div class="label">Posities</div><div class="value">${t.positions || 0}</div></div>
+              </div>
+              <div style="margin-top:8px;font-size:0.75rem;color:var(--muted);">PID: ${t.pid || '-'} | Laatste update: ${lastSeen}</div>
+            </div>
+          `;
+        }).join('');
+      }
+      
+      document.getElementById('multiLastUpdate').textContent = 'Laatste update: ' + new Date().toLocaleTimeString('nl-NL');
+    }
+  } catch (e) {
+    document.getElementById('terminalCards').innerHTML = '<div class="error-msg">Fout: ' + e.message + '</div>';
+  }
+}
+
+function selectTerminalFromCard(name) {
+  showFlash('Terminal ' + name + ' geselecteerd (verbind via Overzicht tab)', 'info');
+}
+
+// ==================== CHART ====================
+
+async function loadChartTerminals() {
+  const sel = document.getElementById('chartTerminal');
+  try {
+    const res = await fetch(API + '/api/terminals', {mode: 'cors', credentials: 'omit'});
+    const data = await res.json();
+    sel.innerHTML = '<option value="">-- Selecteer terminal --</option>';
+    data.terminals.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.name;
+      opt.text = t.name;
+      sel.appendChild(opt);
+    });
+    if (currentTerminal) {
+      sel.value = currentTerminal.name;
+    }
+  } catch (e) {}
+}
+
+async function loadChart() {
+  const terminal = document.getElementById('chartTerminal').value;
+  const hours = document.getElementById('chartHours').value;
+  
+  if (!terminal) {
+    showFlash('Selecteer eerst een terminal', 'error');
+    return;
+  }
+  
+  try {
+    const res = await fetch(API + '/api/history/equity?terminal=' + encodeURIComponent(terminal) + '&hours=' + hours, {mode: 'cors', credentials: 'omit'});
+    const data = await res.json();
+    
+    if (data.ok && data.history.length > 0) {
+      const labels = data.history.map(h => new Date(h.timestamp * 1000).toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit'}));
+      const equityData = data.history.map(h => h.equity);
+      const balanceData = data.history.map(h => h.balance);
+      
+      const ctx = document.getElementById('equityChart').getContext('2d');
+      
+      if (equityChart) equityChart.destroy();
+      
+      equityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Equity',
+              data: equityData,
+              borderColor: '#58a6ff',
+              backgroundColor: 'rgba(88,166,255,0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 2
+            },
+            {
+              label: 'Balance',
+              data: balanceData,
+              borderColor: '#39c5cf',
+              backgroundColor: 'transparent',
+              borderDash: [5, 5],
+              tension: 0.3,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: 'index' },
+          plugins: {
+            legend: { labels: { color: '#c9d1d9' } },
+            tooltip: {
+              backgroundColor: '#161b22',
+              titleColor: '#c9d1d9',
+              bodyColor: '#c9d1d9',
+              borderColor: '#30363d',
+              borderWidth: 1
+            }
+          },
+          scales: {
+            x: { ticks: { color: '#8b949e', maxTicksLimit: 8 }, grid: { color: '#30363d' } },
+            y: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } }
+          }
+        }
+      });
+    } else {
+      document.getElementById('equityChart').style.display = 'none';
+      showFlash('Geen data beschikbaar (collector moet draaien)', 'error');
+    }
+  } catch (e) {
+    showError('Chart laden mislukt: ' + e.message);
+  }
+}
+
+// ==================== POSITION MANAGEMENT ====================
+
+function updatePosManage(positions, currency) {
+  const area = document.getElementById('posManageArea');
+  if (!currentTerminal) {
+    area.innerHTML = '<div class="no-pos">Verbind eerst met een terminal</div>';
+    return;
+  }
+  
+  if (positions.length === 0) {
+    area.innerHTML = '<div class="no-pos">Geen open posities</div>';
+  } else {
+    let html = '<table class="positions-table"><thead><tr>';
+    html += '<th>Ticket</th><th>Symbool</th><th>Type</th><th>Lots</th><th>Open</th><th>Huidig</th><th>P&L</th><th>Actie</th>';
+    html += '</tr></thead><tbody>';
+    positions.forEach(p => {
+      const pnlClass = p.profit >= 0 ? 'pos' : 'neg';
+      html += '<tr>';
+      html += '<td>' + p.ticket + '</td>';
+      html += '<td>' + p.symbol + '</td>';
+      html += '<td>' + p.type + '</td>';
+      html += '<td>' + p.volume.toFixed(2) + '</td>';
+      html += '<td>' + p.open_price.toFixed(5) + '</td>';
+      html += '<td>' + p.current_price.toFixed(5) + '</td>';
+      html += '<td class="pnl ' + pnlClass + '">' + p.profit.toFixed(2) + ' ' + currency + '</td>';
+      html += '<td><button onclick="closePosition(' + p.ticket + ')" class="danger" style="padding:4px 8px;font-size:0.75rem;">Close</button></td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    area.innerHTML = html;
+  }
+  
+  document.getElementById('posLastUpdate').textContent = 'Laatste update: ' + new Date().toLocaleTimeString('nl-NL');
+}
+
+async function closePosition(ticket) {
+  if (!confirm('Weet je zeker dat je positie ' + ticket + ' wilt sluiten?')) return;
+  
+  const reason = prompt('Reden voor sluiten (optioneel):', 'Dashboard close');
+  
+  try {
+    const res = await fetch(API + '/api/position/close', {mode: 'cors', credentials: 'omit', 
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ticket: ticket, reason: reason})
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showFlash('Positie ' + ticket + ' gesloten', 'success');
+      refreshData();
+    } else {
+      showError(data.error || 'Sluiten mislukt');
+    }
+  } catch (e) {
+    showError('Fout: ' + e.message);
+  }
+}
+
+async function closeAllPositions() {
+  if (!confirm('WAARSCHUWING: Alle posities sluiten?\n\nDit kan niet ongedaan worden gemaakt!')) return;
+  
+  const reason = prompt('Reden voor sluiten alle posities:', 'Dashboard close all');
+  
+  try {
+    const res = await fetch(API + '/api/position/closeall', {mode: 'cors', credentials: 'omit', 
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({reason: reason})
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showFlash(data.closed + ' posities gesloten' + (data.failed > 0 ? ' (' + data.failed + ' mislukt)' : ''), 'success');
+      refreshData();
+    } else {
+      showError(data.error || 'Sluiten mislukt');
+    }
+  } catch (e) {
+    showError('Fout: ' + e.message);
+  }
+}
+
+// ==================== LOGS ====================
+
+async function loadLogs() {
+  const level = document.getElementById('logLevel').value;
+  const limit = document.getElementById('logLimit').value;
+  
+  try {
+    const res = await fetch(API + '/api/logs?level=' + level + '&limit=' + limit, {mode: 'cors', credentials: 'omit'});
+    const data = await res.json();
+    
+    const area = document.getElementById('logsArea');
+    if (data.ok && data.entries.length > 0) {
+      let html = '<table class="log-table"><thead><tr><th>Tijd</th><th>Level</th><th>Bericht</th></tr></thead><tbody>';
+      data.entries.forEach(e => {
+        html += '<tr><td>' + e.timestamp + '</td><td><span class="log-level ' + e.level + '">' + e.level + '</span></td><td>' + e.message + '</td></tr>';
+      });
+      html += '</tbody></table>';
+      area.innerHTML = html;
+    } else {
+      area.innerHTML = '<div class="no-pos">Geen logs gevonden</div>';
+    }
+    
+    document.getElementById('logLastUpdate').textContent = 'Laatste update: ' + new Date().toLocaleTimeString('nl-NL');
+  } catch (e) {
+    document.getElementById('logsArea').innerHTML = '<div class="error-msg">Fout: ' + e.message + '</div>';
+  }
+}
+
+function downloadLogs() {
+  window.open(API + '/api/logs/download?format=csv', '_blank');
+}
+
+// ==================== ALERTS ====================
+
+async function loadAlerts() {
+  try {
+    const [configRes, historyRes] = await Promise.all([
+      fetch(API + '/api/alerts/config', {mode: 'cors', credentials: 'omit'}),
+      fetch(API + '/api/alerts/history', {mode: 'cors', credentials: 'omit'})
+    ]);
+    
+    const configData = await configRes.json();
+    const historyData = await historyRes.json();
+    
+    // Config
+    const configArea = document.getElementById('alertConfigArea');
+    if (configData.ok) {
+      let html = '';
+      configData.config.forEach(c => {
+        const label = c.type.replace('_', ' ').toUpperCase();
+        html += `
+          <div class="alert-config-row" data-type="${c.type}">
+            <div class="label"><strong>${label}</strong></div>
+            <div>Drempel: <input type="number" class="alert-threshold" value="${c.threshold}" step="0.1"></div>
+            <div><input type="checkbox" class="alert-enabled" ${c.enabled ? 'checked' : ''}> Actief</div>
+            <div><input type="checkbox" class="alert-telegram" ${c.telegram ? 'checked' : ''}> Telegram</div>
+            <div><input type="checkbox" class="alert-sound" ${c.sound ? 'checked' : ''}> Sound</div>
+            <div><input type="checkbox" class="alert-flash" ${c.flash ? 'checked' : ''}> Flash</div>
+          </div>
+        `;
+      });
+      configArea.innerHTML = html;
+    }
+    
+    // History
+    const historyArea = document.getElementById('alertHistoryArea');
+    if (historyData.ok && historyData.alerts.length > 0) {
+      let html = '<table class="log-table"><thead><tr><th>Tijd</th><th>Type</th><th>Bericht</th><th>Waarde</th></tr></thead><tbody>';
+      historyData.alerts.forEach(a => {
+        const time = new Date(a.timestamp * 1000).toLocaleString('nl-NL');
+        html += '<tr><td>' + time + '</td><td><span class="log-level ERROR">' + a.type + '</span></td><td>' + a.message + '</td><td>' + (a.value || '-') + '</td></tr>';
+      });
+      html += '</tbody></table>';
+      historyArea.innerHTML = html;
+    } else {
+      historyArea.innerHTML = '<div class="no-pos">Geen alerts getriggerd</div>';
+    }
+  } catch (e) {
+    document.getElementById('alertConfigArea').innerHTML = '<div class="error-msg">Fout: ' + e.message + '</div>';
+  }
+}
+
+async function saveAlertConfig() {
+  const rows = document.querySelectorAll('.alert-config-row');
+  const config = [];
+  
+  rows.forEach(row => {
+    config.push({
+      type: row.dataset.type,
+      threshold: parseFloat(row.querySelector('.alert-threshold').value),
+      enabled: row.querySelector('.alert-enabled').checked,
+      telegram: row.querySelector('.alert-telegram').checked,
+      sound: row.querySelector('.alert-sound').checked,
+      flash: row.querySelector('.alert-flash').checked
+    });
+  });
+  
+  try {
+    const res = await fetch(API + '/api/alerts/config', {mode: 'cors', credentials: 'omit', 
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({config: config})
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showFlash('Alert configuratie opgeslagen', 'success');
+    } else {
+      showError('Opslaan mislukt');
+    }
+  } catch (e) {
+    showError('Fout: ' + e.message);
+  }
+}
+
+// ==================== CALENDAR ====================
+
+async function loadCalendar() {
+  try {
+    const res = await fetch(API + '/api/calendar', {mode: 'cors', credentials: 'omit'});
+    const data = await res.json();
+    
+    const area = document.getElementById('calendarArea');
+    if (data.ok && data.events.length > 0) {
+      let html = '<table class="positions-table"><thead><tr><th>Tijd</th><th>Event</th><th>Impact</th><th>Valuta</th><th>Forecast</th><th>Previous</th></tr></thead><tbody>';
+      data.events.forEach(e => {
+        const impactClass = e.impact === 'high' ? 'red' : (e.impact === 'medium' ? 'yellow' : 'green');
+        html += '<tr><td>' + e.time + '</td><td><strong>' + e.title + '</strong></td><td class="' + impactClass + '">' + e.impact.toUpperCase() + '</td><td>' + e.currency + '</td><td>' + e.forecast + '</td><td>' + e.previous + '</td></tr>';
+      });
+      html += '</tbody></table>';
+      area.innerHTML = html;
+    } else {
+      area.innerHTML = '<div class="no-pos">Geen events (dummy data)</div>';
+    }
+  } catch (e) {
+    document.getElementById('calendarArea').innerHTML = '<div class="error-msg">Fout: ' + e.message + '</div>';
+  }
+}
+
+// ==================== SETTINGS ====================
+
+async function loadConfig() {
+  try {
+    const res = await fetch(API + '/api/config', {mode: 'cors', credentials: 'omit'});
+    const data = await res.json();
+    
+    const area = document.getElementById('configArea');
+    if (data.ok) {
+      let html = '';
+      for (const [key, value] of Object.entries(data.config)) {
+        const isSecret = key.toLowerCase().includes('token') || key.toLowerCase().includes('password');
+        html += `
+          <div class="config-row">
+            <label>${key}</label>
+            <input type="${isSecret ? 'password' : 'text'}" class="config-input" data-key="${key}" value="${value || ''}">
+          </div>
+        `;
+      }
+      area.innerHTML = html;
+    } else {
+      area.innerHTML = '<div class="no-pos">Geen configuratie gevonden</div>';
+    }
+  } catch (e) {
+    document.getElementById('configArea').innerHTML = '<div class="error-msg">Fout: ' + e.message + '</div>';
+  }
+}
+
+async function saveConfig() {
+  const inputs = document.querySelectorAll('.config-input');
+  const config = {};
+  inputs.forEach(input => {
+    config[input.dataset.key] = input.value;
+  });
+  
+  try {
+    const res = await fetch(API + '/api/config', {mode: 'cors', credentials: 'omit', 
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(config)
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showFlash('Instellingen opgeslagen', 'success');
+    } else {
+      showError('Opslaan mislukt');
+    }
+  } catch (e) {
+    showError('Fout: ' + e.message);
+  }
+}
+
+// ==================== INIT ====================
+
+loadTerminals();
+setInterval(loadTerminals, 30000);
+setInterval(loadMultiTerminal, 10000);
+</script>
+</body>
+</html>
