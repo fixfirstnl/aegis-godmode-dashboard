@@ -579,7 +579,7 @@ async function loadMultiTerminal() {
       const summary = data.summary;
       const profitClass = summary.total_profit >= 0 ? 'green' : 'red';
       document.getElementById('multiSummary').innerHTML = 
-        'Terminals: <strong>' + summary.count + '</strong> | ' +
+        'Terminals: <strong>' + (summary.count || data.terminals.length) + '</strong> | ' +
         'Total Balance: <strong>' + (summary.total_balance?.toFixed(2) || '0') + '</strong> | ' +
         'Total Equity: <strong>' + (summary.total_equity?.toFixed(2) || '0') + '</strong> | ' +
         'Total P&L: <strong class="' + profitClass + '">' + (summary.total_profit?.toFixed(2) || '0') + '</strong> | ' +
