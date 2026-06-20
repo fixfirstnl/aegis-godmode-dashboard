@@ -455,7 +455,7 @@ async function connectTerminal() {
       body: JSON.stringify({index: parseInt(idx)})
     });
     const data = await res.json();
-    if (data.ok) {
+    if (data.ok || !data.error) {
       currentTerminal = data.terminal;
       document.getElementById('selTerm').textContent = currentTerminal.name;
       document.getElementById('dashboard').style.display = 'block';
@@ -491,7 +491,7 @@ async function refreshData() {
   try {
     const res = await fetch(API + '/api/data');
     const data = await res.json();
-    if (data.ok) {
+    if (data.ok || !data.error) {
       updateDashboard(data);
       document.getElementById('errorArea').innerHTML = '';
     } else {
@@ -575,7 +575,7 @@ async function loadMultiTerminal() {
     const res = await fetch(API + '/api/terminals/overview');
     const data = await res.json();
     
-    if (data.ok) {
+    if (data.ok || !data.error) {
       const summary = data.summary;
       const profitClass = summary.total_profit >= 0 ? 'green' : 'red';
       document.getElementById('multiSummary').innerHTML = 
@@ -660,7 +660,7 @@ async function loadChart() {
     const res = await fetch(API + '/api/history/equity?terminal=' + encodeURIComponent(terminal) + '&hours=' + hours);
     const data = await res.json();
     
-    if (data.ok && data.history.length > 0) {
+    if ((data.ok || !data.error) && data.history.length > 0) {
       const labels = data.history.map(h => new Date(h.timestamp * 1000).toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit'}));
       const equityData = data.history.map(h => h.equity);
       const balanceData = data.history.map(h => h.balance);
@@ -769,7 +769,7 @@ async function closePosition(ticket) {
       body: JSON.stringify({ticket: ticket, reason: reason})
     });
     const data = await res.json();
-    if (data.ok) {
+    if (data.ok || !data.error) {
       showFlash('Positie ' + ticket + ' gesloten', 'success');
       refreshData();
     } else {
@@ -791,7 +791,7 @@ async function closeAllPositions() {
       body: JSON.stringify({reason: reason})
     });
     const data = await res.json();
-    if (data.ok) {
+    if (data.ok || !data.error) {
       showFlash(data.closed + ' posities gesloten' + (data.failed > 0 ? ' (' + data.failed + ' mislukt)' : ''), 'success');
       refreshData();
     } else {
@@ -813,7 +813,7 @@ async function loadLogs() {
     const data = await res.json();
     
     const area = document.getElementById('logsArea');
-    if (data.ok && data.entries.length > 0) {
+    if ((data.ok || !data.error) && data.entries.length > 0) {
       let html = '<table class="log-table"><thead><tr><th>Tijd</th><th>Level</th><th>Bericht</th></tr></thead><tbody>';
       data.entries.forEach(e => {
         html += '<tr><td>' + e.timestamp + '</td><td><span class="log-level ' + e.level + '">' + e.level + '</span></td><td>' + e.message + '</td></tr>';
@@ -848,7 +848,7 @@ async function loadAlerts() {
     
     // Config
     const configArea = document.getElementById('alertConfigArea');
-    if (configData.ok) {
+    if (configData.ok || !configData.error) {
       let html = '';
       configData.config.forEach(c => {
         const label = c.type.replace('_', ' ').toUpperCase();
@@ -868,7 +868,7 @@ async function loadAlerts() {
     
     // History
     const historyArea = document.getElementById('alertHistoryArea');
-    if (historyData.ok && historyData.alerts.length > 0) {
+    if ((historyData.ok || !historyData.error) && historyData.alerts.length > 0) {
       let html = '<table class="log-table"><thead><tr><th>Tijd</th><th>Type</th><th>Bericht</th><th>Waarde</th></tr></thead><tbody>';
       historyData.alerts.forEach(a => {
         const time = new Date(a.timestamp * 1000).toLocaleString('nl-NL');
@@ -905,7 +905,7 @@ async function saveAlertConfig() {
       body: JSON.stringify({config: config})
     });
     const data = await res.json();
-    if (data.ok) {
+    if (data.ok || !data.error) {
       showFlash('Alert configuratie opgeslagen', 'success');
     } else {
       showError('Opslaan mislukt');
@@ -923,7 +923,7 @@ async function loadCalendar() {
     const data = await res.json();
     
     const area = document.getElementById('calendarArea');
-    if (data.ok && data.events.length > 0) {
+    if ((data.ok || !data.error) && data.events.length > 0) {
       let html = '<table class="positions-table"><thead><tr><th>Tijd</th><th>Event</th><th>Impact</th><th>Valuta</th><th>Forecast</th><th>Previous</th></tr></thead><tbody>';
       data.events.forEach(e => {
         const impactClass = e.impact === 'high' ? 'red' : (e.impact === 'medium' ? 'yellow' : 'green');
@@ -947,7 +947,7 @@ async function loadConfig() {
     const data = await res.json();
     
     const area = document.getElementById('configArea');
-    if (data.ok) {
+    if (data.ok || !data.error) {
       let html = '';
       for (const [key, value] of Object.entries(data.config)) {
         const isSecret = key.toLowerCase().includes('token') || key.toLowerCase().includes('password');
@@ -980,7 +980,7 @@ async function saveConfig() {
       body: JSON.stringify(config)
     });
     const data = await res.json();
-    if (data.ok) {
+    if (data.ok || !data.error) {
       showFlash('Instellingen opgeslagen', 'success');
     } else {
       showError('Opslaan mislukt');
