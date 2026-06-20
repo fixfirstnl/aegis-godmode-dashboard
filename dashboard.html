@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="AEGIS Godmode v2.20 - Live Trading Dashboard">
+<title>AEGIS Godmode v2.20 — Dashboard</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="dashboard" id="dashboard">
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+      </button>
+      <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+        <defs><linearGradient id="blg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0ea5e9"/><stop offset="100%" style="stop-color:#10b981"/></linearGradient></defs>
+        <path d="M32 8L10 17v15c0 15 9.5 28.5 22 32 12.5-3.5 22-17 22-32V17L32 8z" fill="none" stroke="url(#blg)" stroke-width="3"/>
+        <circle cx="32" cy="30" r="6" fill="url(#blg)"/>
+      </svg>
+      <span class="brand-text">AEGIS<span>Godmode</span></span>
+    </div>
+    <div class="navbar-right">
+      <span class="badge badge-live">LIVE</span>
+      <select class="account-switcher" id="accountSwitcher" aria-label="Select account">
+        <option value="PepperstoneUK-Demo">PepperstoneUK-Demo ($20K)</option>
+        <option value="ICMarketsEU-Demo">ICMarketsEU-Demo ($4.5K)</option>
+      </select>
+      <div class="user-menu">
+        <div class="user-avatar">T</div>
+        <button class="logout-btn" id="logoutBtn" aria-label="Logout" title="Logout">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5a2 2 0 0 0-2 2v4h2V5h14v14H5v-4H3v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Asset tabs">
+      <div class="sidebar-section-label">Asset Class</div>
+      <button class="sidebar-nav-item active" data-asset="Forex">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+        Forex
+      </button>
+      <button class="sidebar-nav-item" data-asset="Crypto">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+        Crypto
+      </button>
+      <button class="sidebar-nav-item" data-asset="Indices">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+        Indices
+      </button>
+      <button class="sidebar-nav-item" data-asset="Metals">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z M12 5.84L13.93 9h-3.87z M17.5 13c-2.49 0-4.5 2.01-4.5 4.5s2.01 4.5 4.5 4.5 4.5-2.01 4.5-4.5-2.01-4.5-4.5-4.5z M5 21.5h8v-8H5v8z"/></svg>
+        Metals
+      </button>
+      <button class="sidebar-nav-item" data-asset="Combined">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7v-7zm4-3h2v10h-2V7zm4 6h2v4h-2v-4z"/></svg>
+        Combined
+      </button>
+      <hr class="sidebar-divider">
+      <div class="sidebar-section-label">Magic Numbers</div>
+      <div class="sidebar-nav-item" style="cursor:default;opacity:0.6;">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34a.996.996 0 0 0-1.41 0L9 12.25 11.75 15l8.96-8.96a.996.996 0 0 0 0-1.41z"/></svg>
+        Forex: 31337
+      </div>
+      <div class="sidebar-nav-item" style="cursor:default;opacity:0.6;">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34a.996.996 0 0 0-1.41 0L9 12.25 11.75 15l8.96-8.96a.996.996 0 0 0 0-1.41z"/></svg>
+        Crypto: 31338
+      </div>
+      <div class="sidebar-nav-item" style="cursor:default;opacity:0.6;">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34a.996.996 0 0 0-1.41 0L9 12.25 11.75 15l8.96-8.96a.996.996 0 0 0 0-1.41z"/></svg>
+        Indices: 31339
+      </div>
+      <div class="sidebar-nav-item" style="cursor:default;opacity:0.6;">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34a.996.996 0 0 0-1.41 0L9 12.25 11.75 15l8.96-8.96a.996.996 0 0 0 0-1.41z"/></svg>
+        Metals: 31340
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Content Area -->
+    <main class="content-area">
+      <div class="content-header">
+        <h2 id="contentTitle">Forex Dashboard</h2>
+        <p class="subtitle" id="contentSubtitle">Forex trading — Magic: 31337</p>
+      </div>
+
+      <!-- Refresh Bar -->
+      <div class="refresh-bar">
+        <div class="left">
+          <span>Auto-refresh</span>
+          <span class="last-updated" id="lastUpdated">--:--:--</span>
+          <button class="refresh-btn" id="refreshBtn" title="Refresh now">
+            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 0 0-8 8h2a6 6 0 0 1 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35zM6.35 17.65C7.8 19.1 9.79 20 12 20a8 8 0 0 0 8-8h-2a6 6 0 0 1-6 6c-1.66 0-3.14-.69-4.22-1.78L11 13H4v7l2.35-2.35z"/></svg>
+          </button>
+        </div>
+        <div class="progress-bar"><div class="progress-bar-fill" id="refreshProgress"></div></div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="metrics-grid" id="metricsGrid">
+        <div class="loading-overlay" id="metricsLoading"><div class="spinner"></div><div class="loading-text">Loading metrics...</div></div>
+      </div>
+
+      <!-- GO / NO-GO -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <h3><svg class="icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Signal Execution Status</h3>
+        </div>
+        <div class="section-card-body">
+          <div class="gonogo-grid" id="gonogoGrid">
+            <div class="loading-overlay" style="position:relative;inset:auto;height:120px;"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kelly Criterion -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <h3><svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Kelly Criterion Sizing</h3>
+        </div>
+        <div class="section-card-body">
+          <div class="kelly-display" id="kellyDisplay">
+            <div class="loading-overlay" style="position:relative;inset:auto;height:60px;"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <h3><svg class="icon" viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>Performance Analytics</h3>
+        </div>
+        <div class="section-card-body">
+          <div class="charts-grid">
+            <div>
+              <div class="chart-title">Equity Curve</div>
+              <div class="chart-container"><canvas id="equityChart"></canvas></div>
+            </div>
+            <div>
+              <div class="chart-title">Drawdown</div>
+              <div class="chart-container"><canvas id="drawdownChart"></canvas></div>
+            </div>
+            <div>
+              <div class="chart-title">P&L Distribution</div>
+              <div class="chart-container"><canvas id="distChart"></canvas></div>
+            </div>
+            <div>
+              <div class="chart-title">Symbol Performance</div>
+              <div class="chart-container"><canvas id="perfChart"></canvas></div>
+            </div>
+            <div>
+              <div class="chart-title">Regime Distribution</div>
+              <div class="chart-container"><canvas id="regimeChart"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trades Table -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <h3><svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Trade History</h3>
+          <div class="section-card-actions">
+            <button class="btn btn-secondary btn-sm" id="exportBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+        <div class="section-card-body">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr><th>Symbol</th><th>Dir</th><th>Asset</th><th>Lots</th><th>Entry</th><th>Exit</th><th>P&L</th><th>Risk</th><th>Reasoning</th><th>Date</th></tr>
+              </thead>
+              <tbody id="tradesBody"><tr><td colspan="10" class="empty-state"><div class="loading-overlay" style="position:relative;inset:auto;height:80px;"><div class="spinner"></div></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signals Log -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <h3><svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>Signal Log — Reasoning &amp; Filters</h3>
+        </div>
+        <div class="section-card-body">
+          <div class="signals-list" id="signalsList">
+            <div class="loading-overlay" style="position:relative;inset:auto;height:120px;"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-footer">AEGIS Godmode v2.20 &copy; 2025 — Automated Trading System</div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/charts.js"></script>
+<script src="assets/js/dashboard.js"></script>
+</body>
+</html>
