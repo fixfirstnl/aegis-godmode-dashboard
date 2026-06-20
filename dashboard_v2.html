@@ -175,7 +175,22 @@ input[type="checkbox"] { width: auto; cursor: pointer; }
   .grid-2 { grid-template-columns: 1fr; }
   select { min-width: 0; width: 100%; }
   .terminal-grid { grid-template-columns: 1fr; }
-  .tabs { overflow-x: auto; flex-wrap: nowrap; }
+  .tabs { overflow-x: auto; flex-wrap: nowrap; font-size: 11px; }
+  .tab-btn { padding: 8px 10px; font-size: 11px; }
+  h1 { font-size: 1.2rem; }
+  .status-bar { flex-wrap: wrap; gap: 6px; }
+  .status-pill { font-size: 11px; padding: 4px 8px; }
+  .card { padding: 12px; }
+  .flash-notify { left: 10px; right: 10px; top: 10px; }
+  #telegramChatArea { height: 280px; }
+  .config-row { flex-direction: column; gap: 4px; }
+  .config-row label { min-width: auto; }
+  .config-input { width: 100%; }
+}
+@media (max-width: 400px) {
+  .grid-4 { grid-template-columns: 1fr; }
+  .tabs { font-size: 10px; }
+  .tab-btn { padding: 6px 8px; font-size: 10px; }
 }
 </style>
 </head>
@@ -208,6 +223,7 @@ input[type="checkbox"] { width: auto; cursor: pointer; }
   <button class="tab-btn" data-tab="logs">Logs</button>
   <button class="tab-btn" data-tab="alerts">Alerts</button>
   <button class="tab-btn" data-tab="calendar">Kalender</button>
+  <button class="tab-btn" data-tab="telegram">Telegram</button>
   <button class="tab-btn" data-tab="settings">Instellingen</button>
 </div>
 
@@ -378,6 +394,27 @@ input[type="checkbox"] { width: auto; cursor: pointer; }
 </div>
 
 <!-- Tab: Settings -->
+<div class="tab-content" id="tab-telegram">
+  <div class="card" style="max-width: 600px; margin: 0 auto;">
+    <h2>Telegram Chat</h2>
+    <div id="telegramChatArea" style="border: 1px solid #ddd; border-radius: 8px; padding: 12px; height: 350px; overflow-y: auto; background: #f8f9fa; margin-bottom: 12px;">
+      <div class="chat-msg bot" style="background: #e3f2fd; padding: 8px 12px; border-radius: 12px; margin: 4px 0; max-width: 80%; font-size: 13px;">
+        <strong>AEGIS Bot</strong><br>Welkom bij AEGIS Telegram! Stuur een bericht om te testen.
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <input type="text" id="telegramInput" placeholder="Typ een bericht..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" onkeypress="if(event.key==='Enter')sendTelegramMessage()">
+      <button onclick="sendTelegramMessage()" style="padding: 10px 18px; background: #1e88e5; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">Verstuur</button>
+    </div>
+    <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+      <button onclick="testTelegram()" style="padding: 8px 14px; background: #43a047; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">🧪 Test Bot</button>
+      <button onclick="clearTelegramChat()" style="padding: 8px 14px; background: #757575; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">🗑️ Wis Chat</button>
+      <button onclick="loadTelegramHistory()" style="padding: 8px 14px; background: #fb8c00; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">📜 Geschiedenis</button>
+    </div>
+    <div id="telegramStatus" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
+  </div>
+</div>
+
 <div class="tab-content" id="tab-settings">
   <div class="card">
     <h2>Instellingen</h2>
@@ -415,6 +452,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'logs') loadLogs();
     if (btn.dataset.tab === 'alerts') loadAlerts();
     if (btn.dataset.tab === 'calendar') loadCalendar();
+    if (btn.dataset.tab === 'telegram') { /* Telegram chat is interactive, no auto-load needed */ }
     if (btn.dataset.tab === 'settings') loadConfig();
   });
 });
@@ -987,6 +1025,102 @@ async function saveConfig() {
     }
   } catch (e) {
     showError('Fout: ' + e.message);
+  }
+}
+
+// ==================== TELEGRAM CHAT ====================
+
+let telegramMessages = [];
+
+function addTelegramMessage(text, sender, type) {
+  const area = document.getElementById('telegramChatArea');
+  const div = document.createElement('div');
+  const isUser = sender === 'user';
+  div.className = 'chat-msg ' + (isUser ? 'user' : 'bot');
+  div.style.cssText = `
+    background: ${isUser ? '#e8f5e9' : '#e3f2fd'};
+    padding: 8px 12px; border-radius: 12px; margin: 4px 0;
+    max-width: 80%; font-size: 13px; align-self: ${isUser ? 'flex-end' : 'flex-start'};
+    margin-left: ${isUser ? 'auto' : '0'}; word-wrap: break-word;
+  `;
+  div.innerHTML = '<strong>' + (isUser ? 'Jij' : 'AEGIS Bot') + '</strong><br>' + escapeHtml(text);
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  telegramMessages.push({text, sender, type, time: new Date().toISOString()});
+}
+
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+function sendTelegramMessage() {
+  const input = document.getElementById('telegramInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  addTelegramMessage(msg, 'user', 'text');
+  input.value = '';
+  
+  // Simuleer bot reactie
+  setTimeout(() => {
+    addTelegramMessage('Bericht ontvangen! (Live Telegram integratie vereist bot configuratie)', 'bot', 'reply');
+  }, 800);
+  
+  // Echte API call (optioneel - werkt alleen als bot token geconfigureerd is)
+  sendRealTelegram(msg);
+}
+
+async function sendRealTelegram(msg) {
+  try {
+    const res = await fetch(API + '/api/telegram/test', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({message: msg})
+    });
+    const data = await res.json();
+    document.getElementById('telegramStatus').textContent = 
+      data.sent ? '✅ Verstuurd naar Telegram' : '⚠️ Telegram niet geconfigureerd (simulatie mode)';
+  } catch (e) {
+    document.getElementById('telegramStatus').textContent = '⚠️ Telegram API niet beschikbaar (simulatie mode)';
+  }
+}
+
+async function testTelegram() {
+  addTelegramMessage('Test bericht verzonden...', 'user', 'test');
+  try {
+    const res = await fetch(API + '/api/telegram/test', {method: 'POST'});
+    const data = await res.json();
+    if (data.sent) {
+      addTelegramMessage('✅ Telegram bot werkt! Bericht verstuurd.', 'bot', 'success');
+    } else {
+      addTelegramMessage('⚠️ Telegram bot niet geconfigureerd. Voeg TELEGRAM_BOT_TOKEN toe in Instellingen.', 'bot', 'warning');
+    }
+  } catch (e) {
+    addTelegramMessage('❌ Telegram API fout: ' + e.message, 'bot', 'error');
+  }
+}
+
+function clearTelegramChat() {
+  telegramMessages = [];
+  const area = document.getElementById('telegramChatArea');
+  area.innerHTML = '<div class="chat-msg bot" style="background: #e3f2fd; padding: 8px 12px; border-radius: 12px; margin: 4px 0; max-width: 80%; font-size: 13px;"><strong>AEGIS Bot</strong><br>Chat gewist. Typ een nieuw bericht!</div>';
+  document.getElementById('telegramStatus').textContent = '';
+}
+
+async function loadTelegramHistory() {
+  try {
+    const res = await fetch(API + '/api/alerts/history');
+    const data = await res.json();
+    if (data.ok && data.history && data.history.length > 0) {
+      addTelegramMessage('📜 Alert geschiedenis geladen (' + data.history.length + ' alerts)', 'bot', 'info');
+      data.history.slice(0, 5).forEach(h => {
+        addTelegramMessage('[' + h.created_at + '] ' + h.type + ': ' + h.message, 'bot', 'history');
+      });
+    } else {
+      addTelegramMessage('📭 Geen alert geschiedenis gevonden', 'bot', 'info');
+    }
+  } catch (e) {
+    addTelegramMessage('❌ Geschiedenis laden mislukt: ' + e.message, 'bot', 'error');
   }
 }
 
