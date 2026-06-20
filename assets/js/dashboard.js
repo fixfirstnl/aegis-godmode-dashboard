@@ -1,6 +1,6 @@
 /* ===== AEGIS Dashboard v2.20 -- Live Cloudflare API ===== */
 const API_BASE = 'https://api-v2.staxpilot.com';
-const API = {
+const DASH_API = {
   health: API_BASE + '/api/health',
   trades: API_BASE + '/api/trades',
   signals: API_BASE + '/api/signals',
@@ -119,9 +119,9 @@ function generateMockData() {
 async function fetchData() {
   try {
     const [mRes, tRes, sRes] = await Promise.all([
-      safeFetch(API.metrics),
-      safeFetch(API.trades),
-      safeFetch(API.signals)
+      safeFetch(DASH_API.metrics),
+      safeFetch(DASH_API.trades),
+      safeFetch(DASH_API.signals)
     ]);
     
     const metricsData = mRes.ok ? await mRes.json() : {};
