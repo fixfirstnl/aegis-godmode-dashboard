@@ -1,6 +1,17 @@
 # Cloudflare Pages Redirects
+# Order matters: specific rules first, catch-all last
+
+# Auth pages
 /login /index.html 200
 /register /register.html 200
+
+# Dashboard direct access
 /dashboard /dashboard.html 200
+/dashboard/ /dashboard.html 200
 /dashboard.html /dashboard.html 200
+
+# API proxy (keep for backward compat)
+/api/* https://api-v2.staxpilot.com/:splat 200
+
+# SPA fallback - must be LAST
 /* /index.html 200
