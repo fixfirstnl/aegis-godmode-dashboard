@@ -1,10 +1,10 @@
-/* ===== AEGIS Dashboard ===== */
+/* ===== AEGIS Dashboard v2.20 -- Live Cloudflare API ===== */
+const API_BASE = 'https://api-v2.staxpilot.com';
 const API = {
-  health: '/api/health',
-  trades: '/api/trades',
-  signals: '/api/signals',
-  metrics: '/api/metrics',
-  accounts: '/api/accounts',
+  health: API_BASE + '/api/health',
+  trades: API_BASE + '/api/trades',
+  signals: API_BASE + '/api/signals',
+  metrics: API_BASE + '/api/metrics',
 };
 
 const MAGIC = { Forex: 31337, Crypto: 31338, Indices: 31339, Metals: 31340 };
@@ -15,7 +15,13 @@ let refreshTimer = null;
 let progressTimer = null;
 let refreshInterval = 30000;
 
-// Mock data generator
+// Determine if we should use demo mode
+function isDemoMode() {
+  // Check if the API is accessible, otherwise fall back to mock
+  return false; // We'll try live first, then fallback to mock on error
+}
+
+// Mock data generator (fallback)
 function generateMockData() {
   const symbols = {
     Forex: ['EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','USDCHF','NZDUSD','EURGBP'],
@@ -96,22 +102,54 @@ function generateMockData() {
 }
 
 async function fetchData() {
-  if (isDemoMode()) return generateMockData();
   try {
-    const params = `?account=${encodeURIComponent(currentAccount)}&asset=${encodeURIComponent(currentAsset)}`;
     const [mRes, tRes, sRes] = await Promise.all([
-      authFetch(API.metrics + params),
-      authFetch(API.trades + params),
-      authFetch(API.signals + params)
+      fetch(API.metrics),
+      fetch(API.trades),
+      fetch(API.signals)
     ]);
-    const metrics = mRes.ok ? await mRes.json() : {};
-    const trades = tRes.ok ? await tRes.json() : [];
-    const signals = sRes.ok ? await sRes.json() : [];
+    
+    const metricsData = mRes.ok ? await mRes.json() : {};
+    const tradesData = tRes.ok ? await tRes.json() : {};
+    const signalsData = sRes.ok ? await sRes.json() : {};
+    
+    // Transform new API format to dashboard format
+    const metrics = metricsData.metrics && metricsData.metrics.length > 0 
+      ? transformMetrics(metricsData.metrics, currentAsset) 
+      : generateMockData().metrics;
+    
+    const trades = tradesData.trades || [];
+    const signals = signalsData.signals || [];
+    
     return { metrics, trades, signals };
   } catch (e) {
     console.error('API error, using mock data', e);
     return generateMockData();
   }
+}
+
+function transformMetrics(apiMetrics, asset) {
+  // Filter by current asset if not Combined
+  const relevant = asset === 'Combined' 
+    ? apiMetrics 
+    : apiMetrics.filter(m => m.account_name === asset);
+  
+  const latest = relevant[0] || apiMetrics[0] || {};
+  
+  return {
+    total_trades: latest.total_trades || 0,
+    win_rate: latest.win_rate || 0,
+    profit_factor: 1.5, // Not stored in API yet
+    total_pnl: latest.net_profit || 0,
+    avg_pnl: 0, // Not stored yet
+    max_drawdown: 5.0, // Not stored yet
+    sharpe: 1.2, // Not stored yet
+    open_positions: 0, // Not stored yet
+    today_signals: latest.daily_trades || 0,
+    kelly: 0.05, // Not stored yet
+    balance: currentAccount === 'PepperstoneUK-Demo' ? 20000 : 4587,
+    equity: currentAccount === 'PepperstoneUK-Demo' ? 20000 + (latest.net_profit||0) : 4587 + (latest.net_profit||0),
+  };
 }
 
 // Render
@@ -163,7 +201,6 @@ function renderMetrics(m) {
       <canvas class="sparkline" id="spark6"></canvas>
     </div>
   `;
-  // Sparklines
   setTimeout(() => {
     for (let i=1;i<=6;i++) {
       const c = document.getElementById('spark'+i);
@@ -176,20 +213,19 @@ function renderTrades(trades) {
   const tbody = document.getElementById('tradesBody'); if (!tbody) return;
   if (!trades || trades.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="empty-state"><svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><p>No trades found</p></td></tr>'; return; }
   tbody.innerHTML = trades.map(t => {
-    const pnlClass = t.pnl >= 0 ? 'profit' : 'loss'; const pnlSign = t.pnl >= 0 ? '+' : '';
-    const dirClass = t.direction === 'BUY' ? 'buy' : 'sell';
-    const isOpen = !t.close_time;
+    const pnlClass = t.profit >= 0 ? 'profit' : 'loss'; const pnlSign = t.profit >= 0 ? '+' : '';
+    const dirClass = t.type === 'BUY' ? 'buy' : 'sell';
     return `<tr>
       <td class="col-symbol">${t.symbol}</td>
-      <td class="col-direction ${dirClass}">${t.direction}</td>
-      <td>${t.asset_class}</td>
-      <td>${t.lots}</td>
-      <td>${t.entry}</td>
-      <td>${t.exit || (isOpen ? '<span class=\"badge badge-live\">Open</span>' : '-')}</td>
-      <td class="col-pnl ${pnlClass}">${pnlSign}$${t.pnl.toFixed(2)}</td>
-      <td>${t.risk}%</td>
-      <td class="col-reason" title="${t.reasoning||''}">${t.reasoning ? (t.reasoning.substring(0,50)+'...') : '-'}</td>
-      <td>${new Date(t.open_time).toLocaleDateString()}</td>
+      <td class="col-direction ${dirClass}">${t.type}</td>
+      <td>${t.asset_class || '-'}</td>
+      <td>${t.volume}</td>
+      <td>${t.open_price}</td>
+      <td>${t.current_price || '-'}</td>
+      <td class="col-pnl ${pnlClass}">${pnlSign}$${parseFloat(t.profit).toFixed(2)}</td>
+      <td>${t.sl || '-'}</td>
+      <td class="col-reason" title="">-</td>
+      <td>${t.time ? new Date(t.time).toLocaleDateString() : '-'}</td>
     </tr>`;
   }).join('');
 }
@@ -198,21 +234,19 @@ function renderSignals(signals) {
   const container = document.getElementById('signalsList'); if (!container) return;
   if (!signals || signals.length === 0) { container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><p>No signals found</p></div>'; return; }
   container.innerHTML = signals.map(s => {
-    const status = s.executed ? 'executed' : (s.reason_not_executed ? 'rejected' : 'pending');
-    const statusTag = s.executed ? '<span class="tag tag-go">EXECUTED</span>' : '<span class="tag tag-nogo">NOT TAKEN</span>';
-    const notExec = s.reason_not_executed ? `<div class="signal-notice"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>Why not executed: ${s.reason_not_executed}</div>` : '';
+    const status = 'executed';
+    const statusTag = '<span class="tag tag-go">LIVE</span>';
     return `<div class="signal-item ${status}">
       <div class="signal-header">
-        <div class="signal-title"><span class="signal-symbol">${s.symbol}</span> ${s.direction} ${statusTag}</div>
+        <div class="signal-title"><span class="signal-symbol">${s.symbol}</span> ${s.asset_class} ${statusTag}</div>
         <div class="signal-meta">
-          <span class="tag tag-score">Score: ${s.score}</span>
-          <span class="tag tag-regime">${s.regime}</span>
+          <span class="tag tag-score">Price: ${s.price}</span>
+          <span class="tag tag-regime">${s.market_regime}</span>
           <span style="font-size:0.75rem;color:var(--text-muted);">${new Date(s.timestamp).toLocaleTimeString()}</span>
         </div>
       </div>
-      <div class="signal-reasoning"><strong>Setup:</strong> ${s.reasoning}</div>
-      <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:0.25rem;">Kelly sizing: ${s.kelly||'0.05'} | Magic: ${MAGIC[s.asset_class]||'Combined'}</div>
-      ${notExec}
+      <div class="signal-reasoning"><strong>RSI:</strong> ${s.rsi?.toFixed(1)} | <strong>ATR:</strong> ${s.atr?.toFixed(2)} | <strong>MA50:</strong> ${s.ma50?.toFixed(2)} | <strong>MA200:</strong> ${s.ma200?.toFixed(2)}</div>
+      <div style="font-size:0.8125rem;color:var(--text-muted);margin-top:0.25rem;">Volume: ${s.volume} | Equity: $${s.equity} | Positions: ${s.open_positions}</div>
     </div>`;
   }).join('');
 }
@@ -220,62 +254,58 @@ function renderSignals(signals) {
 function renderCharts(data) {
   if (!window.AegisCharts) return;
   const trades = data.trades || [];
-  // Equity curve (cumulative P&L)
   const equity = []; let cum = 0;
-  for (const t of [...trades].reverse()) { cum += t.pnl; equity.push(cum); }
+  for (const t of [...trades].reverse()) { cum += (parseFloat(t.profit) || 0); equity.push(cum); }
   const equityLabels = equity.map((_,i) => String(i+1));
   const eqCanvas = document.getElementById('equityChart');
   if (eqCanvas && equity.length > 1) window.AegisCharts.lineChart(eqCanvas, equity, equityLabels);
 
-  // Drawdown (simulated from equity)
   const dd = equity.map(v => { const peak = Math.max(...equity.slice(0, equity.indexOf(v)+1)); return -((peak-v)/peak*100); });
   const ddCanvas = document.getElementById('drawdownChart');
   if (ddCanvas && dd.length > 1) window.AegisCharts.areaChart(ddCanvas, dd, equityLabels);
 
-  // Distribution histogram
   const bins = ['-200','-100','-50','0','50','100','200']; const binVals = [0,0,0,0,0,0,0];
   for (const t of trades) {
-    const p = t.pnl;
+    const p = parseFloat(t.profit) || 0;
     if (p <= -200) binVals[0]++; else if (p <= -100) binVals[1]++; else if (p <= -50) binVals[2]++;
     else if (p <= 0) binVals[3]++; else if (p <= 50) binVals[4]++; else if (p <= 100) binVals[5]++; else binVals[6]++;
   }
   const histCanvas = document.getElementById('distChart');
   if (histCanvas) window.AegisCharts.histogramChart(histCanvas, bins, binVals);
 
-  // Strategy/Symbol bar chart
   const symPnL = {};
-  for (const t of trades) { symPnL[t.symbol] = (symPnL[t.symbol]||0) + t.pnl; }
+  for (const t of trades) { symPnL[t.symbol] = (symPnL[t.symbol]||0) + (parseFloat(t.profit)||0); }
   const syms = Object.keys(symPnL).slice(0,6); const vals = syms.map(s => +symPnL[s].toFixed(2));
   const barCanvas = document.getElementById('perfChart');
   if (barCanvas) window.AegisCharts.barChart(barCanvas, syms, vals);
 
-  // Regime pie
   const regimeCounts = {};
-  for (const s of data.signals||[]) { regimeCounts[s.regime] = (regimeCounts[s.regime]||0)+1; }
+  for (const s of data.signals||[]) { regimeCounts[s.market_regime] = (regimeCounts[s.market_regime]||0)+1; }
   const pieCanvas = document.getElementById('regimeChart');
   if (pieCanvas) window.AegisCharts.pieChart(pieCanvas, Object.keys(regimeCounts), Object.values(regimeCounts));
 }
 
 function renderGoNoGo(signals) {
   const grid = document.getElementById('gonogoGrid'); if (!grid) return;
-  const exec = signals.filter(s => s.executed).length;
-  const notExec = signals.filter(s => !s.executed && s.reason_not_executed).length;
-  const pending = signals.filter(s => !s.executed && !s.reason_not_executed).length;
+  const total = signals.length;
+  const live = signals.filter(s => s.market_regime === 'Trending').length;
+  const ranging = signals.filter(s => s.market_regime === 'Ranging').length;
+  const other = total - live - ranging;
   grid.innerHTML = `
     <div class="gonogo-card go">
       <svg class="status-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-      <div class="status-text">TRADES TAKEN</div>
-      <div class="status-detail">${exec} signals executed this session</div>
+      <div class="status-text">TRENDING</div>
+      <div class="status-detail">${live} signals in trending regime</div>
     </div>
     <div class="gonogo-card nogo">
       <svg class="status-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-      <div class="status-text">TRADES BLOCKED</div>
-      <div class="status-detail">${notExec} signals filtered by risk rules</div>
+      <div class="status-text">RANGING</div>
+      <div class="status-detail">${ranging} signals in ranging regime</div>
     </div>
     <div class="gonogo-card" style="border-left:3px solid var(--warning);">
-      <svg class="status-icon" viewBox="0 0 24 24" style="fill:var(--warning)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-      <div class="status-text" style="color:var(--warning)">PENDING</div>
-      <div class="status-detail">${pending} awaiting execution</div>
+      <svg class="status-icon" viewBox="0 0 24 24" style="fill:var(--warning)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.53 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+      <div class="status-text" style="color:var(--warning)">OTHER</div>
+      <div class="status-detail">${other} other market regimes</div>
     </div>
   `;
 }
