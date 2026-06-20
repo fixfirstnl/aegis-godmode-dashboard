@@ -1,10 +1,10 @@
 /* ===== AEGIS Dashboard v2.20 -- Live Cloudflare API ===== */
-const API_BASE = 'https://api-v2.staxpilot.com';
+const API_BASE = '/api';
 const API = {
-  health: API_BASE + '/api/health',
-  trades: API_BASE + '/api/trades',
-  signals: API_BASE + '/api/signals',
-  metrics: API_BASE + '/api/metrics',
+  health: API_BASE + '/health',
+  trades: API_BASE + '/trades',
+  signals: API_BASE + '/signals',
+  metrics: API_BASE + '/metrics',
 };
 
 const MAGIC = { Forex: 31337, Crypto: 31338, Indices: 31339, Metals: 31340 };
