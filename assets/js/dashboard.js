@@ -21,6 +21,21 @@ function isDemoMode() {
   return false; // We'll try live first, then fallback to mock on error
 }
 
+// Helper to safely fetch with timeout and better error reporting
+async function safeFetch(url, options = {}) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal, mode: 'cors', credentials: 'omit' });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (e) {
+    clearTimeout(timeoutId);
+    console.error(`Fetch error for ${url}:`, e.name, e.message);
+    throw e;
+  }
+}
+
 // Mock data generator (fallback)
 function generateMockData() {
   const symbols = {
@@ -104,14 +119,19 @@ function generateMockData() {
 async function fetchData() {
   try {
     const [mRes, tRes, sRes] = await Promise.all([
-      fetch(API.metrics),
-      fetch(API.trades),
-      fetch(API.signals)
+      safeFetch(API.metrics),
+      safeFetch(API.trades),
+      safeFetch(API.signals)
     ]);
     
     const metricsData = mRes.ok ? await mRes.json() : {};
     const tradesData = tRes.ok ? await tRes.json() : {};
     const signalsData = sRes.ok ? await sRes.json() : {};
+    
+    // Debug logging
+    console.log('API metrics response:', metricsData);
+    console.log('API trades response:', tradesData);
+    console.log('API signals response:', signalsData);
     
     // Transform new API format to dashboard format
     const metrics = metricsData.metrics && metricsData.metrics.length > 0 
